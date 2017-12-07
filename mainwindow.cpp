@@ -7,6 +7,11 @@
 #include <QFileDialog>
 #include "QTextStream"
 
+int start_time;//文件更新起始时间
+QString root_dir;//应用根目录
+QString updateReady_dir;//更新文件的根目录
+QString start_dir;//文件更新根目录
+QFileInfoList GetFileList(QString path);//遍历文件夹
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -14,6 +19,10 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
     ui->dateTimeEdit->setCalendarPopup(true);
+    root_dir = QCoreApplication::applicationDirPath();
+    updateReady_dir = root_dir+"/updateReady";
+    QDir updateReady(updateReady_dir);
+    updateReady.mkdir(updateReady_dir);
 }
 
 MainWindow::~MainWindow()
@@ -23,45 +32,57 @@ MainWindow::~MainWindow()
 
 void MainWindow::on_pushButton_clicked()
 {
-    /*
-       getOpenFileName函数说明
-       函数原形： QStringList QFileDialog::getOpenFileNames(
-       QWidget * parent = 0,
-       const QString & caption = QString(),    //  打开文件对话框的标题
-       const QString & dir = QString(),            //  查找目录
-       const QString & filter = QString(),     //  设置需要过滤的文件格式
-       QString * selectedFilter = 0,
-       Options options = 0) [static]
-       */
-       //---获取文件名
-       QString fileName = QFileDialog :: getOpenFileName(this, NULL, NULL, "*.h *.cpp *.txt");
-
-       //---打开文件并读取文件内容
-       QFile file(fileName);
-
-       //--打开文件成功
-       if (file.open(QIODevice ::ReadOnly | QIODevice ::Text))
-       {
-           QTextStream textStream(&file);
-           while (!textStream.atEnd())
-           {
-               //---QtextEdit按行显示文件内容
-               //showText->append(textStream.readLine());
-           }
-       }
-       else    //---打开文件失败
-       {
-           /*
-           information函数参数说明：
-           函数原型
-           QMessageBox::information(
-           QWidget * parent,
-           const QString & title,                  //--- 标题
-           const QString & text,                   //---显示内容
-           StandardButtons buttons = Ok,   //---OK按钮
-           StandardButton defaultButton = NoButton)
-           [static]
-           */
-           QMessageBox ::information(NULL, NULL, "open file error");
-       }
+    QString dir = QFileDialog::getExistingDirectory(this, tr("Open Directory"), "/home", QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+    ui->edit_dir->setText(dir);
+    start_dir = dir;
 }
+
+void MainWindow::on_btn_getNew_clicked()
+{
+    QDateTime tmp_time = ui->dateTimeEdit->dateTime();
+    start_time = tmp_time.toTime_t();
+    QFileInfoList filelist = GetFileList(start_dir);
+    for(int i=0;i<filelist.count();i++){
+        QFileInfo tmp_fileinfo = filelist.at(i);
+        QString name= tmp_fileinfo.baseName();
+        QString tmp_path = tmp_fileinfo.path();
+        int tmp_time = tmp_fileinfo.lastModified().toTime_t();
+        QString tmp_url = tmp_fileinfo.absoluteFilePath();
+        QString tmp_url2 = tmp_url;
+
+        tmp_path.replace(start_dir,updateReady_dir);
+        QDir dir(tmp_path);
+        if(dir.exists() == false){
+            dir.mkpath(tmp_path);
+        }
+        if(tmp_time >= start_time){
+            QFile::copy(tmp_url,tmp_url2.replace(start_dir,updateReady_dir));
+            ui->edit_out->append(name+"|"+QString::number(tmp_time)+"|"+tmp_url+"|"+tmp_url2.replace(start_dir,updateReady_dir));
+        }
+    }
+
+}
+
+
+/**
+ * 遍历文件夹
+ * @brief GetFileList
+ * @param path
+ * @return
+ */
+QFileInfoList GetFileList(QString path)
+{
+    QDir dir(path);
+    QFileInfoList file_list = dir.entryInfoList(QDir::Files | QDir::Hidden | QDir::NoSymLinks);
+    QFileInfoList folder_list = dir.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot);
+
+    for(int i = 0; i != folder_list.size(); i++)
+    {
+         QString name = folder_list.at(i).absoluteFilePath();
+         QFileInfoList child_file_list = GetFileList(name);
+         file_list.append(child_file_list);
+    }
+
+    return file_list;
+}
+
