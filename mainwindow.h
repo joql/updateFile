@@ -20,6 +20,10 @@ private slots:
 
     void on_btn_getNew_clicked();
 
+    void on_pushButton_2_clicked();
+
+    void on_btn_getNew_2_clicked();
+
 private:
     Ui::MainWindow *ui;
 };

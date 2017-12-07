@@ -7,10 +7,11 @@
 #include <QFileDialog>
 #include "QTextStream"
 
-int start_time;//文件更新起始时间
+
 QString root_dir;//应用根目录
 QString updateReady_dir;//更新文件的根目录
-QString start_dir;//文件更新根目录
+QString start_dir;//项目根目录
+int start_time;//文件更新起始时间
 QFileInfoList GetFileList(QString path);//遍历文件夹
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -22,7 +23,7 @@ MainWindow::MainWindow(QWidget *parent) :
     root_dir = QCoreApplication::applicationDirPath();
     updateReady_dir = root_dir+"/updateReady";
     QDir updateReady(updateReady_dir);
-    updateReady.mkdir(updateReady_dir);
+    if(!updateReady.exists()) updateReady.mkdir(updateReady_dir);
 }
 
 MainWindow::~MainWindow()
@@ -42,24 +43,26 @@ void MainWindow::on_btn_getNew_clicked()
     QDateTime tmp_time = ui->dateTimeEdit->dateTime();
     start_time = tmp_time.toTime_t();
     QFileInfoList filelist = GetFileList(start_dir);
+    ui->edit_out->append("任务数: "+QString::number(filelist.count()));
     for(int i=0;i<filelist.count();i++){
         QFileInfo tmp_fileinfo = filelist.at(i);
-        QString name= tmp_fileinfo.baseName();
         QString tmp_path = tmp_fileinfo.path();
         int tmp_time = tmp_fileinfo.lastModified().toTime_t();
         QString tmp_url = tmp_fileinfo.absoluteFilePath();
-        QString tmp_url2 = tmp_url;
+        QString tmp_newurl = tmp_url;
 
-        tmp_path.replace(start_dir,updateReady_dir);
-        QDir dir(tmp_path);
-        if(dir.exists() == false){
-            dir.mkpath(tmp_path);
-        }
         if(tmp_time >= start_time){
-            QFile::copy(tmp_url,tmp_url2.replace(start_dir,updateReady_dir));
-            ui->edit_out->append(name+"|"+QString::number(tmp_time)+"|"+tmp_url+"|"+tmp_url2.replace(start_dir,updateReady_dir));
+            //判断路径是否存在，否则创建
+            tmp_path.replace(start_dir,updateReady_dir);
+            QDir dir(tmp_path);
+            if(dir.exists() == false){
+                dir.mkpath(tmp_path);
+            }
+            QFile::copy(tmp_url,tmp_newurl.replace(start_dir,updateReady_dir));
+            ui->edit_out->append("第"+QString::number(i+1)+"项，正在复制"+tmp_fileinfo.fileName());
         }
     }
+    ui->edit_out->append("任务完成");
 
 }
 
@@ -86,3 +89,32 @@ QFileInfoList GetFileList(QString path)
     return file_list;
 }
 
+
+void MainWindow::on_pushButton_2_clicked()
+{
+    QString dir = QFileDialog::getExistingDirectory(this, tr("Open Directory"), "/home", QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+    ui->edit_dir_2->setText(dir);
+}
+
+void MainWindow::on_btn_getNew_2_clicked()
+{
+    QFileInfoList filelist = GetFileList(updateReady_dir);
+    ui->edit_out->append("任务数: "+QString::number(filelist.count()));
+    for(int i=0;i<filelist.count();i++){
+        QFileInfo tmp_fileinfo = filelist.at(i);
+        QString path = tmp_fileinfo.absoluteFilePath();
+        QFile need_file(path.replace(updateReady_dir,ui->edit_dir_2->text()));
+        if(need_file.exists()){
+            //文件存在则先备份
+            QFile::rename(path,path+QDateTime::currentDateTime().toString("yyyyMMdd"));
+            QFile::copy(tmp_fileinfo.absoluteFilePath(),path);
+            ui->edit_out->append("第"+QString::number(i+1)+"项,备份后复制"+tmp_fileinfo.fileName());
+
+        }else{
+            //不存在直接复制
+            QFile::copy(tmp_fileinfo.absoluteFilePath(),path);
+            ui->edit_out->append("第"+QString::number(i+1)+"项,正在复制"+tmp_fileinfo.fileName());
+        }
+    }
+    ui->edit_out->append("任务完成");
+}
