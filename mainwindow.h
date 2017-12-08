@@ -2,6 +2,15 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include "QMessageBox"
+#include "QString"
+#include "QFile"
+#include "QIODevice"
+#include <QFileDialog>
+#include "QTextStream"
+#include "QUrl"
+#include "QtNetwork"
+
 
 namespace Ui {
 class MainWindow;
@@ -23,6 +32,8 @@ private slots:
     void on_pushButton_2_clicked();
 
     void on_btn_getNew_2_clicked();
+
+    void on_btn_getNew_3_clicked();
 
 private:
     Ui::MainWindow *ui;
