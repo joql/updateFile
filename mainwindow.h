@@ -10,6 +10,8 @@
 #include "QTextStream"
 #include "QUrl"
 #include "QtNetwork"
+#include "QFtp"
+#include "QDebug"
 
 
 namespace Ui {
@@ -34,6 +36,9 @@ private slots:
     void on_btn_getNew_2_clicked();
 
     void on_btn_getNew_3_clicked();
+
+    void on_pushButton_3_clicked();
+
 
 private:
     Ui::MainWindow *ui;

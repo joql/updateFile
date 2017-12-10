@@ -7,6 +7,12 @@
 QT       += core gui network
 RC_ICONS += favicon.ico
 
+CONFIG(debug,debug|release){
+   LIBS+=E:\tools\qt\qt5.9.3\5.9.3\mingw53_32\lib\libQt5Ftpd.a
+}else{
+   LIBS+=E:\tools\qt\qt5.9.3\5.9.3\mingw53_32\lib\libQt5Ftp.a
+}
+
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TARGET = updateFile
