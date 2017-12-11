@@ -8,9 +8,13 @@ QString updateBack_dir;//更新文件备份的根目录
 QString start_dir;//项目根目录
 int start_time;//文件更新起始时间
 QFileInfoList GetFileList(QString path);//遍历文件夹
+bool ftp_get(QString filename,QFile *file);
+bool ftp_put(QString filename,QFile *file);
+bool ftp_cd(QString filepath);
 QString ftp_url;//ftp地址
 QString ftp_name;//ftp用户名
 QString ftp_pwd;//ftp密码
+QFtp *ftp;
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -108,8 +112,15 @@ void MainWindow::on_btn_getNew_2_clicked()
     for(int i=0;i<filelist.count();i++){
         QFileInfo tmp_fileinfo = filelist.at(i);
         QString path = tmp_fileinfo.absoluteFilePath();
+        QString path2 = tmp_fileinfo.absolutePath();
         QFile need_file(path.replace(updateReady_dir,ui->edit_dir_2->text()));
         //备份被更新文件
+        //判断路径是否存在，否则创建
+        path2.replace(ui->edit_dir_2->text(),updateBack_dir);
+        QDir dir(path2);
+        if(dir.exists() == false){
+            dir.mkpath(path2);
+        }
         QString tmp_path = path;
         QFile::copy(path,tmp_path.replace(ui->edit_dir_2->text(),updateBack_dir));
         if(need_file.exists()){
@@ -142,52 +153,33 @@ void MainWindow::on_btn_getNew_3_clicked()
     */
 
     //ftp登陆
-    QFtp *ftp = new QFtp(this);
+    ftp = new QFtp(this);
     ftp->connectToHost("120.25.124.213",21);
     ftp->login("kang","kang");
-    ftp->cd("/room");
-    qDebug() << ftp->error();
 
-
-    QFile *file  = new QFile("22.jpg");
-    file->open(QFile::ReadWrite);
-    //ui->edit_out->append(QString(file->readAll()));
-    ftp->put(file,"22.jpg");
-    //ftp->get("22.jpg",file);
-
-    QEventLoop loop;
-        connect(ftp,SIGNAL(done(bool)),&loop,SLOT(quit()));
-    loop.exec();
-        qDebug() << ftp->error();
-    qDebug() << "compelet";
-
-    /*
     QFileInfoList filelist = GetFileList(updateReady_dir);
     for(int i=0;i<filelist.count();i++){
         QFileInfo tmp_fileinfo = filelist.at(i);
         QString relat_path = tmp_fileinfo.absolutePath();
         QString relat_path2 = tmp_fileinfo.absolutePath();
         QString abs_path = tmp_fileinfo.absoluteFilePath();
-        //判断路径是否存在，否则创建
-        relat_path2.replace(updateReady_dir,updateBack_dir);
-        QDir dir(relat_path2);
-        if(dir.exists() == false){
-            dir.mkpath(relat_path2);
-        }
-        QFile *file = new QFile(abs_path.replace(updateReady_dir,updateBack_dir));
-        file->open(QIODevice::WriteOnly);
-        ftp->cd(relat_path.replace(updateReady_dir,""));
-        ftp->get(tmp_fileinfo.fileName(),file);
-        QEventLoop loop;
-                    connect(ftp, SIGNAL(commandFinished(int,bool)), &loop, SLOT(quit()));
 
-        loop.exec();
-        //file->write("213");
-        file->close();
-        qDebug() << i;
+        //切换到操作目录
+        if(ftp_cd(relat_path.replace(updateReady_dir,""))){
+            //下载被替换的文件
+            QFile *file = new QFile(abs_path.replace(updateReady_dir,updateBack_dir));
+            file->open(QFile::ReadWrite);
+            if(ftp_get(tmp_fileinfo.fileName(),file)){
+                //如果文件存在并且下载成功，自动上传更名后的备份文件
+                ftp_put(tmp_fileinfo.fileName()+QDateTime::currentDateTime().toString("yyyyMMdd"),file);
+            }
+            //上传更新文件
+            QFile *newfile = new QFile(tmp_fileinfo.absoluteFilePath());
+            newfile->open(QIODevice::ReadWrite);
+            ftp_put(tmp_fileinfo.fileName(),newfile);
+        }
     }
-    */
-    //file->close();
+
 
 
 }
@@ -202,3 +194,64 @@ void MainWindow::on_pushButton_3_clicked()
     updateBack.mkdir(updateBack_dir);
     ui->edit_out->setText("初始化完成");
 }
+
+/**
+ * @brief ftp_get
+ * @param filepath
+ * @param filename
+ * @param file
+ * @return
+ */
+bool ftp_get(QString filename,QFile *file){
+    ftp->get(filename,file);
+    QEventLoop loop;
+       QObject::connect(ftp,SIGNAL(done(bool)),&loop,SLOT(quit()));
+    loop.exec();
+    file->close();
+    if(ftp->error() == 0){
+        return true;
+    }else{
+        return false;
+    }
+}
+
+bool ftp_put(QString filename,QFile *file){
+    ftp->put(file,filename);
+
+    QEventLoop loop;
+       QObject::connect(ftp,SIGNAL(done(bool)),&loop,SLOT(quit()));
+    loop.exec();
+    file->close();
+    if(ftp->error() == 0){
+        return true;
+    }else{
+        return false;
+    }
+}
+
+bool ftp_cd(QString filepath){
+    ftp->cd(filepath);
+    QEventLoop loop;
+       QObject::connect(ftp,SIGNAL(done(bool)),&loop,SLOT(quit()));
+    loop.exec();
+    if(ftp->error() == 0){
+        return true;
+    }else{
+        QStringList list;
+        QString tmp;
+        list = filepath.split("/");
+        for(int i=1;i<list.count();i++){
+            ftp->mkdir(list.at(i));
+            loop.exec();
+            tmp = tmp+"/"+list.at(i);
+            ftp->cd(tmp);
+
+        }
+        if(ftp->error() == 0){
+            return true;
+        }else{
+            return false;
+        }
+    }
+}
+
