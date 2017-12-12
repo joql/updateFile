@@ -67,8 +67,12 @@ void MainWindow::on_btn_getNew_clicked()
             if(dir.exists() == false){
                 dir.mkpath(tmp_path);
             }
-            QFile::copy(tmp_url,tmp_newurl.replace(start_dir,updateReady_dir));
-            ui->edit_out->append("第"+QString::number(j)+"项，正在复制"+tmp_fileinfo.fileName());
+            if(QFile::copy(tmp_url,tmp_newurl.replace(start_dir,updateReady_dir))){
+                ui->edit_out->append(QString::number(j)+","+tmp_fileinfo.fileName()+",复制成功");
+            }else{
+                ui->edit_out->append(QString::number(j)+","+tmp_fileinfo.fileName()+",失败");
+            }
+
         }
     }
     ui->edit_out->append("任务完成");
@@ -107,33 +111,56 @@ void MainWindow::on_pushButton_2_clicked()
 
 void MainWindow::on_btn_getNew_2_clicked()
 {
+    //1.被替换的文件是否存在，存在则复制到备份文件夹
+    //2.重命名被替换文件
+    //3.新文件替换源文件
     QFileInfoList filelist = GetFileList(updateReady_dir);
     ui->edit_out->append("任务数: "+QString::number(filelist.count()));
     for(int i=0;i<filelist.count();i++){
         QFileInfo tmp_fileinfo = filelist.at(i);
-        QString path = tmp_fileinfo.absoluteFilePath();
-        QString path2 = tmp_fileinfo.absolutePath();
-        QFile need_file(path.replace(updateReady_dir,ui->edit_dir_2->text()));
-        //备份被更新文件
-        //判断路径是否存在，否则创建
-        path2.replace(ui->edit_dir_2->text(),updateBack_dir);
-        QDir dir(path2);
-        if(dir.exists() == false){
-            dir.mkpath(path2);
-        }
-        QString tmp_path = path;
-        QFile::copy(path,tmp_path.replace(ui->edit_dir_2->text(),updateBack_dir));
-        if(need_file.exists()){
-            //文件存在则先备份
-            QFile::rename(path,path+QDateTime::currentDateTime().toString("yyyyMMdd"));
-            QFile::copy(tmp_fileinfo.absoluteFilePath(),path);
-            ui->edit_out->append("第"+QString::number(i+1)+"项,备份后复制"+tmp_fileinfo.fileName());
+        QString old = ui->edit_dir_2->text();
+        QString filepath = tmp_fileinfo.absoluteFilePath();
+        QString relat_filepath = filepath;
+        relat_filepath = relat_filepath.replace(updateReady_dir,"");
+        QString path = tmp_fileinfo.absolutePath();
+        QString relat_path = path;
+        relat_path = relat_path.replace(updateReady_dir,"");
+        QString out;
 
-        }else{
-            //不存在直接复制
-            QFile::copy(tmp_fileinfo.absoluteFilePath(),path);
-            ui->edit_out->append("第"+QString::number(i+1)+"项,正在复制"+tmp_fileinfo.fileName());
+        QFile need_file(old+relat_filepath);
+        if(need_file.exists()){
+
+            //判断路径是否存在，否则创建
+            QDir dir(updateBack_dir+relat_path);
+            if(dir.exists() == false){
+                dir.mkpath(updateBack_dir+relat_path);
+            }
+            //文件存在则先备份
+            QFile::remove(updateBack_dir+relat_filepath);
+            if(QFile::copy(old+relat_filepath,updateBack_dir+relat_filepath)){
+                out = "old备份成功";
+            }else{
+                out = "old失败";
+            }
+
+            //存在则先删除，解决rename问题
+            QFile file_del(old+relat_filepath+QDateTime::currentDateTime().toString("yyyyMMdd"));
+            if(file_del.exists()){
+                file_del.remove();
+            }
+            if(QFile::rename(old+relat_filepath,old+relat_filepath+QDateTime::currentDateTime().toString("yyyyMMdd"))){
+                out = "改名成功,"+out;
+            }else{
+                out = "改名失败,"+out;
+            }
         }
+        //更新_
+        if(QFile::copy(filepath,old+relat_filepath)){
+            out = "更新成功,"+out;
+        }else{
+            out = "更新失败,"+out;
+        }
+        ui->edit_out->append(QString::number(i+1)+","+tmp_fileinfo.fileName()+","+out);
     }
     ui->edit_out->append("任务完成");
 } 
