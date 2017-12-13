@@ -207,7 +207,7 @@ p, li { white-space: pre-wrap; }
      <property name="geometry">
       <rect>
        <x>290</x>
-       <y>20</y>
+       <y>18</y>
        <width>91</width>
        <height>24</height>
       </rect>
@@ -220,7 +220,7 @@ p, li { white-space: pre-wrap; }
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>40</y>
+       <y>20</y>
        <width>61</width>
        <height>20</height>
       </rect>
@@ -233,7 +233,7 @@ p, li { white-space: pre-wrap; }
      <property name="geometry">
       <rect>
        <x>90</x>
-       <y>40</y>
+       <y>20</y>
        <width>191</width>
        <height>20</height>
       </rect>
@@ -243,13 +243,39 @@ p, li { white-space: pre-wrap; }
      <property name="geometry">
       <rect>
        <x>300</x>
-       <y>60</y>
+       <y>58</y>
        <width>71</width>
        <height>24</height>
       </rect>
      </property>
      <property name="text">
       <string>开始</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="edit_dir_6">
+     <property name="geometry">
+      <rect>
+       <x>90</x>
+       <y>60</y>
+       <width>191</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="placeholderText">
+      <string>清理备份文件 例20171201</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="btn_getNew_4">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>58</y>
+       <width>71</width>
+       <height>24</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>删除</string>
      </property>
     </widget>
    </widget>

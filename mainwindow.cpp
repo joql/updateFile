@@ -282,3 +282,23 @@ bool ftp_cd(QString filepath){
     }
 }
 
+
+void MainWindow::on_btn_getNew_4_clicked()
+{
+    QString date = ui->edit_dir_6->text();
+    QString tmp_dir = ui->edit_dir_2->text();
+    QFileInfoList filelist = GetFileList(tmp_dir);
+    for(int i=0,j=0;i<filelist.count();i++){
+        QFileInfo fileinfo = filelist.at(i);
+        QString filename = fileinfo.fileName();
+        if(filename.indexOf(QRegExp("(php|html|css|js)"+date+"$")) >= 0){
+            j++;
+            if(QFile::remove(fileinfo.absoluteFilePath()) == true){
+                ui->edit_out->append(QString::number(j)+","+filename+",删除成功！");
+            }else{
+                 ui->edit_out->append(QString::number(j)+","+filename+",失败");
+            }
+
+        }
+    }
+}
